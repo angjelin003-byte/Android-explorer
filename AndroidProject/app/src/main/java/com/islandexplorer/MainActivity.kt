@@ -11,9 +11,6 @@ import android.view.SurfaceView
 import androidx.appcompat.app.AppCompatActivity
 import com.islandexplorer.core.GameManager
 import com.islandexplorer.core.Vector2
-import com.islandexplorer.core.Vector3
-import com.islandexplorer.player.PlayerMovement
-import com.islandexplorer.player.PlayerStamina
 import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity() {
@@ -22,26 +19,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Hide action bar for full screen
         supportActionBar?.hide()
         
-        // Initialize Core Systems (so we can pass refs to the UI)
-        val movement = PlayerMovement()
-        val stamina = PlayerStamina()
-        gameManager = GameManager() // In a real app we'd inject dependencies
-        
-        gameView = GameView(this, movement, stamina)
-        setContentView(gameView)
-        
+        gameManager = GameManager()
         gameManager.initGame()
+        
+        gameView = GameView(this, gameManager)
+        setContentView(gameView)
     }
 }
 
 class GameView(
     context: Context, 
-    private val movement: PlayerMovement,
-    private val stamina: PlayerStamina
+    private val gameManager: GameManager
 ) : SurfaceView(context), SurfaceHolder.Callback, Runnable {
 
     private var thread: Thread? = null
@@ -49,26 +39,23 @@ class GameView(
     
     // Joystick State
     private var joyCenterX = 250f
-    private var joyCenterY = 0f // Set on size changed
+    private var joyCenterY = 0f
     private val joyRadius = 150f
     private var joyInput = Vector2(0f, 0f)
     private var joyPointerId = -1
-    
-    // Virtual Camera Drag State
     private var camDragPointerId = -1
     
-    // Paints
-    private val bgPaint = Paint().apply { color = Color.rgb(20, 30, 20) }
+    // Graphical Paints
+    private val terrainPaint = Paint()
+    private val shadowPaint = Paint().apply { color = Color.argb(120, 0, 0, 0) }
     private val playerPaint = Paint().apply { color = Color.rgb(100, 150, 255) }
-    private val joyBasePaint = Paint().apply { color = Color.argb(100, 255, 255, 255) }
-    private val joyNubPaint = Paint().apply { color = Color.argb(200, 255, 255, 255) }
-    private val textPaint = Paint().apply { 
+    private val fogPaint = Paint()
+    private val uiPaint = Paint().apply { 
         color = Color.WHITE
         textSize = 40f
         isAntiAlias = true
+        setShadowLayer(5f, 2f, 2f, Color.BLACK)
     }
-
-    private var lastTime = System.nanoTime()
 
     init {
         holder.addCallback(this)
@@ -98,48 +85,97 @@ class GameView(
     override fun run() {
         while (isRunning) {
             if (!holder.surface.isValid) continue
-
-            val currentTime = System.nanoTime()
-            val dt = (currentTime - lastTime) / 1_000_000_000f
-            lastTime = currentTime
-
-            updateLogic(dt)
+            updateLogic()
             drawFrame()
         }
     }
 
-    private fun updateLogic(dt: Float) {
-        // Feed joystick to movement
-        movement.move(joyInput, false, stamina.isTired(), dt)
-        stamina.update(dt, movement.isWalking(), movement.isRunning())
+    private fun updateLogic() {
+        // Map joystick to input manager and tick the whole simulation
+        gameManager.inputManager.virtualJoystickInput = joyInput
+        gameManager.update()
     }
 
     private fun drawFrame() {
         val canvas: Canvas? = holder.lockCanvas()
         canvas?.let {
             try {
-                it.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+                it.drawColor(Color.BLACK) // Clear
 
-                // 1. Draw 2D Top-Down Player Representation
-                val scale = 20f
-                val drawX = (width / 2f) + (movement.position.x * scale)
-                val drawY = (height / 2f) - (movement.position.z * scale) // -Z is up in 3D
-                it.drawCircle(drawX, drawY, 30f, playerPaint)
+                // 1. Render Enhanced Procedural Terrain Grid (Pseudo-3D)
+                val movement = gameManager.movement
+                val terrain = gameManager.terrainManager
                 
-                // 2. HUD
-                it.drawText("Vertical 3D Prototype Engine", 50f, 100f, textPaint)
-                it.drawText("State: \${movement.getCurrentState()}", 50f, 160f, textPaint)
-                it.drawText("Stamina: \${stamina.currentStamina.toInt()}/100", 50f, 220f, textPaint)
-                it.drawText("X: \${movement.position.x.toInt()} Z: \${movement.position.z.toInt()}", 50f, 280f, textPaint)
+                val tileSize = 20f
+                val gridRadius = 20
+                val px = movement.position.x
+                val pz = movement.position.z
+                
+                val startX = (px / tileSize).toInt() - gridRadius
+                val startZ = (pz / tileSize).toInt() - gridRadius
+                
+                for (z in startZ..(startZ + gridRadius * 2)) {
+                    for (x in startX..(startX + gridRadius * 2)) {
+                        val worldX = x * tileSize
+                        val worldZ = z * tileSize
+                        
+                        // Calculate mathematical height of this specific tile
+                        val elevation = terrain.getElevationAt(worldX, worldZ)
+                        
+                        // Pick color based on elevation
+                        val baseColor = when {
+                            elevation < -1.0f -> Color.rgb(30, 144, 255) // Water
+                            elevation < 0.5f -> Color.rgb(238, 214, 175) // Sand
+                            elevation < 6.0f -> Color.rgb(34, 139, 34) // Grass
+                            elevation < 9.0f -> Color.rgb(139, 69, 19) // Mud
+                            else -> Color.rgb(120, 120, 120) // Stone
+                        }
+                        
+                        // Add realistic shading (higher = brighter, lower = darker)
+                        val shade = (elevation * 8).toInt().coerceIn(-60, 60)
+                        val r = (Color.red(baseColor) + shade).coerceIn(0, 255)
+                        val g = (Color.green(baseColor) + shade).coerceIn(0, 255)
+                        val b = (Color.blue(baseColor) + shade).coerceIn(0, 255)
+                        terrainPaint.color = Color.rgb(r, g, b)
+                        
+                        // Project to screen coordinates
+                        val screenX = (width / 2f) + (worldX - px) * 5f
+                        val screenY = (height / 2f) - (worldZ - pz) * 5f 
+                        
+                        it.drawRect(screenX, screenY, screenX + tileSize * 5f, screenY + tileSize * 5f, terrainPaint)
+                    }
+                }
 
-                // 3. Draw Virtual Joystick
+                // 2. Draw Player with 3D Height Simulation
+                val screenCx = width / 2f
+                val screenCy = height / 2f
+                
+                // Draw drop shadow on the ground
+                it.drawCircle(screenCx, screenCy, 20f, shadowPaint)
+                
+                // Draw player offset by elevation to simulate physical height climbing
+                val visualYOffset = movement.position.y * 5f
+                it.drawCircle(screenCx, screenCy - visualYOffset, 25f, playerPaint)
+
+                // 3. Render Realistic Fog Overlay
+                val weather = gameManager.weatherSystem.currentWeather
+                fogPaint.color = Color.argb(
+                    (weather.fogDensity * 255).toInt(), 
+                    weather.r, weather.g, weather.b
+                )
+                it.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fogPaint)
+
+                // 4. UI HUD
+                it.drawText("Weather: \${weather.name}", 50f, 100f, uiPaint)
+                it.drawText("Elevation: \${String.format("%.1f", movement.position.y)}m", 50f, 160f, uiPaint)
+                it.drawText("Stamina: \${gameManager.stamina.currentStamina.toInt()}%", 50f, 220f, uiPaint)
+
+                // 5. Virtual Joystick
+                val joyBasePaint = Paint().apply { color = Color.argb(100, 255, 255, 255) }
                 it.drawCircle(joyCenterX, joyCenterY, joyRadius, joyBasePaint)
                 val nubX = joyCenterX + (joyInput.x * joyRadius)
                 val nubY = joyCenterY + (joyInput.y * joyRadius)
-                it.drawCircle(nubX, nubY, 60f, joyNubPaint)
-                
-                // 4. Draw Right Side Camera Drag Area Hint
-                it.drawText("Drag Here for Camera", width - 450f, height - 300f, textPaint)
+                it.drawCircle(nubX, nubY, 60f, Paint().apply { color = Color.argb(200, 255, 255, 255) })
 
             } finally {
                 holder.unlockCanvasAndPost(it)
@@ -156,26 +192,18 @@ class GameView(
 
         when (action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                // Check if touch is on left side (Joystick)
                 if (x < width / 2f && joyPointerId == -1) {
                     joyPointerId = pointerId
                     updateJoystick(x, y)
-                } 
-                // Right side (Camera)
-                else if (x >= width / 2f && camDragPointerId == -1) {
+                } else if (x >= width / 2f && camDragPointerId == -1) {
                     camDragPointerId = pointerId
                 }
             }
             MotionEvent.ACTION_MOVE -> {
                 for (i in 0 until event.pointerCount) {
                     val pId = event.getPointerId(i)
-                    val pX = event.getX(i)
-                    val pY = event.getY(i)
-                    
                     if (pId == joyPointerId) {
-                        updateJoystick(pX, pY)
-                    } else if (pId == camDragPointerId) {
-                        // In a real implementation, send delta to TouchInputManager
+                        updateJoystick(event.getX(i), event.getY(i))
                     }
                 }
             }
