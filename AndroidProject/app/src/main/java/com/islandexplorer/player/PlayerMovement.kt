@@ -10,8 +10,8 @@ class PlayerMovement {
     private val walkSpeed = 2.5f
     private val runSpeed = 6.0f
     private val acceleration = 5.0f
-    private var isWalking = false
-    private var isRunning = false
+    private var _isWalking = false
+    private var _isRunning = false
     private var state = PlayerState.IDLE
 
     fun move(input: Vector2, wantToRun: Boolean, isTired: Boolean, deltaTime: Float) {
@@ -24,13 +24,13 @@ class PlayerMovement {
         // Smooth acceleration/deceleration
         currentSpeed += (targetSpeed - currentSpeed) * acceleration * deltaTime
         
-        isWalking = currentSpeed > 0.1f && currentSpeed <= walkSpeed + 0.5f
-        isRunning = currentSpeed > walkSpeed + 0.5f
+        _isWalking = currentSpeed > 0.1f && currentSpeed <= walkSpeed + 0.5f
+        _isRunning = currentSpeed > walkSpeed + 0.5f
         
         state = when {
             isTired && currentSpeed > 0.1f -> PlayerState.TIRED
-            isRunning -> PlayerState.RUNNING
-            isWalking -> PlayerState.WALKING
+            _isRunning -> PlayerState.RUNNING
+            _isWalking -> PlayerState.WALKING
             else -> PlayerState.IDLE
         }
         
@@ -41,8 +41,8 @@ class PlayerMovement {
         }
     }
     
-    fun isWalking() = isWalking
-    fun isRunning() = isRunning
+    fun isWalking() = _isWalking
+    fun isRunning() = _isRunning
     fun getCurrentState() = state
 }
 enum class PlayerState { IDLE, WALKING, RUNNING, TIRED, JUMPING, CROUCHING }
