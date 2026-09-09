@@ -1,8 +1,12 @@
 package com.islandexplorer.world
 
 class LODManager {
-    fun updateLODs(cameraPosition: Vector3) {
-        // Manage Mesh LODs and Impostors based on distance
+    fun updateObjectLOD(detailLevel: DetailLevel, renderableObject: Any) {
+        when (detailLevel) {
+            DetailLevel.NEAR -> {} // Use High-Poly Mesh, Physics Enabled
+            DetailLevel.MEDIUM -> {} // Use Mid-Poly Mesh, Simplified Physics
+            DetailLevel.FAR -> {} // Use Low-Poly Mesh, No Physics
+            DetailLevel.VERY_FAR -> {} // Use 2D Billboard / Impostor, Frustum Culling
+        }
     }
 }
-class Vector3(val x: Float, val y: Float, val z: Float)

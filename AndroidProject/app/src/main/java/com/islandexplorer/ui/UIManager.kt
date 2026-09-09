@@ -1,10 +1,20 @@
 package com.islandexplorer.ui
 
 class UIManager {
-    fun updateStaminaBar(stamina: Float) {
-        // Update HUD
+    fun updateStaminaHUD(percent: Float) {
+        // Adjust stamina bar width/color based on percent
+        // Hide if at 100% to keep UI minimal
     }
-    fun showContextButton(action: String) {
-        // Show contextual buttons (e.g., Interact, Run, Tent)
+    
+    fun updateCompassHUD(heading: String) {
+        // Show N, S, E, W
+    }
+    
+    fun showInteractionPrompt(text: String) {
+        // e.g. "Rest until morning?"
+    }
+    
+    fun hideInteractionPrompt() {
+        // Clear prompt
     }
 }
