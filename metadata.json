@@ -1,0 +1,6 @@
+{
+  "name": "Vertical 3D Island Explorer",
+  "description": "A realistic, optimized 3D exploration game for Android, designed for portrait/vertical gameplay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

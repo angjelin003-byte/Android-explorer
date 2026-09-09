@@ -1,0 +1,24 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace = "com.islandexplorer"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.islandexplorer"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    // Include potential 3D rendering engine (e.g., Filament or Rajawali)
+    // implementation("com.google.android.filament:filament-android:1.43.1")
+}
