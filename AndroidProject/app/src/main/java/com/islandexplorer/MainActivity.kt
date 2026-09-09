@@ -166,9 +166,10 @@ class GameView(
                 it.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fogPaint)
 
                 // 4. UI HUD
-                it.drawText("Weather: \${weather.name}", 50f, 100f, uiPaint)
-                it.drawText("Elevation: \${String.format("%.1f", movement.position.y)}m", 50f, 160f, uiPaint)
-                it.drawText("Stamina: \${gameManager.stamina.currentStamina.toInt()}%", 50f, 220f, uiPaint)
+                it.drawText("Weather: ${weather.name}", 50f, 100f, uiPaint)
+                val elevationStr = String.format("%.1f", movement.position.y)
+                it.drawText("Elevation: ${elevationStr}m", 50f, 160f, uiPaint)
+                it.drawText("Stamina: ${gameManager.stamina.currentStamina.toInt()}%", 50f, 220f, uiPaint)
 
                 // 5. Virtual Joystick
                 val joyBasePaint = Paint().apply { color = Color.argb(100, 255, 255, 255) }
