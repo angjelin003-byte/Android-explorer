@@ -1,13 +1,17 @@
 package com.islandexplorer.input
 
+import com.islandexplorer.core.Vector2
+
 class TouchInputManager {
-    fun getMovementInput(): Vector2 {
-        // Parse left side virtual joystick
-        return Vector2(0f, 0f)
-    }
-    fun getLookInput(): Vector2 {
-        // Parse right side drag for camera
-        return Vector2(0f, 0f)
+    var virtualJoystickInput = Vector2(0f, 0f)
+    var cameraDragDelta = Vector2(0f, 0f)
+    var runButtonPressed = false
+    var interactButtonPressed = false
+    
+    fun update() {
+        // Read raw touch pointers here and map them to joystick/camera logic
+        // Clear drag delta after reading
+        cameraDragDelta = Vector2(0f, 0f)
+        interactButtonPressed = false
     }
 }
-class Vector2(val x: Float, val y: Float)
