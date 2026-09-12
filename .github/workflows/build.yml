@@ -50,6 +50,10 @@ jobs:
               mkdir -p gradle/wrapper
               cp -r AndroidProject/gradle/wrapper/* gradle/wrapper/
             fi
+            if [ -d "AndroidProject/app" ] && [ -d "app" ]; then
+              cp -rn AndroidProject/app/* app/ 2>/dev/null || true
+              cp -rn app/* AndroidProject/app/ 2>/dev/null || true
+            fi
           fi
 
           if [ -f "build.gradle.kts" ] && [ -d "app" ]; then

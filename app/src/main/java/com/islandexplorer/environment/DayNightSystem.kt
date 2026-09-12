@@ -14,6 +14,10 @@ class DayNightSystem {
     fun setTime(time: Float) {
         timeOfDay = time.coerceIn(0.0f, 24.0f)
     }
+
+    fun advanceTime(hours: Float) {
+        timeOfDay = (timeOfDay + hours) % 24.0f
+    }
     
     fun getAmbientLight(): Float {
         return when {

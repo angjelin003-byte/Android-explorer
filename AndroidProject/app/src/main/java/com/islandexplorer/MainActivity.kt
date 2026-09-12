@@ -132,11 +132,14 @@ class GameView(
                         }
                         
                         // Add realistic shading (higher = brighter, lower = darker)
-                        val shade = (elevation * 8).toInt().coerceIn(-60, 60)
-                        val r = (Color.red(baseColor) + shade).coerceIn(0, 255)
-                        val g = (Color.green(baseColor) + shade).coerceIn(0, 255)
-                        val b = (Color.blue(baseColor) + shade).coerceIn(0, 255)
-                        terrainPaint.color = Color.rgb(r, g, b)
+                        val shade: Int = (elevation * 8).toInt().coerceIn(-60, 60)
+                        val baseR: Int = (baseColor shr 16) and 0xFF
+                        val baseG: Int = (baseColor shr 8) and 0xFF
+                        val baseB: Int = baseColor and 0xFF
+                        val r: Int = (baseR + shade).coerceIn(0, 255)
+                        val g: Int = (baseG + shade).coerceIn(0, 255)
+                        val b: Int = (baseB + shade).coerceIn(0, 255)
+                        terrainPaint.color = Color.argb(255, r, g, b)
                         
                         // Project to screen coordinates
                         val screenX = (width / 2f) + (worldX - px) * 5f
