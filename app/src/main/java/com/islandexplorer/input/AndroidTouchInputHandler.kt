@@ -122,35 +122,18 @@ class AndroidTouchInputHandler(
                     camera.updateOrbitPosition()
                     view?.invalidate()
                 } else if (pointerCount == 1 && isDragging && !joystickActive) {
-                    // One-Finger Pan / Drag: Move LookAt target across ground plane (XZ)
+                    // One-Finger Drag: Orbit Camera (Pitch & Yaw)
                     val currentX = event.getX(0)
                     val currentY = event.getY(0)
-
                     val deltaScreenX = currentX - lastTouchX
                     val deltaScreenY = currentY - lastTouchY
-
-                    // Sensitivity scaled by camera distance and height so drag speed is consistent 1:1 on ground
-                    val panFactor = (camera.distance / viewportHeight) * 1.5f
-
-                    // Camera orientation vectors on ground plane
-                    val yawRad = Math.toRadians(camera.yaw.toDouble())
-                    val forwardX = -sin(yawRad).toFloat()
-                    val forwardZ = -cos(yawRad).toFloat()
-                    val rightX = cos(yawRad).toFloat()
-                    val rightZ = -sin(yawRad).toFloat()
-
-                    // Screen drag mapped to camera-aligned ground plane
-                    val moveX = (-deltaScreenX * rightX + deltaScreenY * forwardX) * panFactor
-                    val moveZ = (-deltaScreenX * rightZ + deltaScreenY * forwardZ) * panFactor
-
-                    camera.target.x += moveX
-                    camera.target.z += moveZ
-
-                    // Keep target elevation anchored to terrain surface
-                    camera.target.y = terrainManager.getElevationAt(camera.target.x, camera.target.z)
-
+                    
+                    val orbitSensitivity = 0.3f
+                    camera.yaw = (camera.yaw - deltaScreenX * orbitSensitivity) % 360f
+                    camera.pitch = (camera.pitch - deltaScreenY * orbitSensitivity).coerceIn(15.0f, 88.0f)
+                    
                     camera.updateOrbitPosition()
-
+                    
                     lastTouchX = currentX
                     lastTouchY = currentY
                     view?.invalidate()

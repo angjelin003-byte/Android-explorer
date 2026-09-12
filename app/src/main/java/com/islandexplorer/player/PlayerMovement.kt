@@ -14,7 +14,7 @@ class PlayerMovement {
     private var _isRunning = false
     private var state = PlayerState.IDLE
 
-    fun move(input: Vector2, wantToRun: Boolean, isTired: Boolean, deltaTime: Float) {
+    fun move(input: Vector2, cameraYaw: Float, wantToRun: Boolean, isTired: Boolean, deltaTime: Float) {
         val targetSpeed = if (input.magnitude() > 0.1f) {
             if (wantToRun && !isTired) runSpeed else walkSpeed
         } else {
@@ -34,10 +34,34 @@ class PlayerMovement {
             else -> PlayerState.IDLE
         }
         
-        // Apply movement vector relative to camera (simplified)
+        // Apply movement vector relative to camera
         if (currentSpeed > 0.1f) {
-            position.x += input.x * currentSpeed * deltaTime
-            position.z += input.y * currentSpeed * deltaTime
+            // Convert camera yaw to radians.
+            // In GameCamera, yaw is 0 when camera looks down -Z axis.
+            val yawRad = Math.toRadians(cameraYaw.toDouble())
+            
+            // Camera's forward vector in XZ plane
+            val camForwardX = -Math.sin(yawRad).toFloat()
+            val camForwardZ = -Math.cos(yawRad).toFloat()
+            
+            // Camera's right vector in XZ plane
+            val camRightX = Math.cos(yawRad).toFloat()
+            val camRightZ = -Math.sin(yawRad).toFloat()
+            
+            // input.x is Horizontal (right = positive)
+            // input.y is Vertical (forward = negative, because Android screen Y goes down)
+            val horizontal = input.x
+            val vertical = -input.y // flip so positive means forward
+            
+            val moveDirX = camRightX * horizontal + camForwardX * vertical
+            val moveDirZ = camRightZ * horizontal + camForwardZ * vertical
+            
+            // Normalize move direction so diagonal isn't faster (simplified)
+            val moveLen = Math.sqrt((moveDirX * moveDirX + moveDirZ * moveDirZ).toDouble()).toFloat()
+            if (moveLen > 0.001f) {
+                position.x += (moveDirX / moveLen) * currentSpeed * deltaTime
+                position.z += (moveDirZ / moveLen) * currentSpeed * deltaTime
+            }
         }
     }
     

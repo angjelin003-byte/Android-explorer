@@ -46,9 +46,10 @@ class GameManager {
         inputManager.update()
         
         movement.move(
-            inputManager.virtualJoystickInput, 
-            inputManager.runButtonPressed, 
-            stamina.isTired(), 
+            inputManager.virtualJoystickInput,
+            gameCamera.yaw,
+            inputManager.runButtonPressed,
+            stamina.isTired(),
             deltaTime
         )
         
