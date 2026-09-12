@@ -35,6 +35,23 @@ jobs:
 
       - name: Build Debug APK with Gradle
         run: |
+          # Sync configuration files between root and AndroidProject if either is missing
+          if [ -d "AndroidProject" ]; then
+            if [ ! -f "settings.gradle.kts" ] && [ -f "AndroidProject/settings.gradle.kts" ]; then
+              cp AndroidProject/settings.gradle.kts .
+            fi
+            if [ ! -f "gradle.properties" ] && [ -f "AndroidProject/gradle.properties" ]; then
+              cp AndroidProject/gradle.properties .
+            fi
+            if [ ! -f "build.gradle.kts" ] && [ -f "AndroidProject/build.gradle.kts" ]; then
+              cp AndroidProject/build.gradle.kts .
+            fi
+            if [ ! -d "gradle/wrapper" ] && [ -d "AndroidProject/gradle/wrapper" ]; then
+              mkdir -p gradle/wrapper
+              cp -r AndroidProject/gradle/wrapper/* gradle/wrapper/
+            fi
+          fi
+
           if [ -f "build.gradle.kts" ] && [ -d "app" ]; then
             echo "Building from root Android project..."
             ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
