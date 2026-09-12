@@ -1,25 +1,26 @@
 package com.islandexplorer.environment
 
 class DayNightSystem {
-    var timeOfDay: Float = 8.0f // Starts at 8:00 AM
-        private set
-
+    var timeOfDay: Float = 8.0f 
+    var timeScale: Float = 1.0f 
+    
     fun update(deltaTime: Float) {
-        // 1 real second = 1 game minute -> deltaTime / 60 hours
-        timeOfDay += (deltaTime / 60f) 
-        if (timeOfDay >= 24f) timeOfDay -= 24f
+        timeOfDay += (deltaTime / 60.0f) * timeScale
+        if (timeOfDay >= 24.0f) {
+            timeOfDay = 0.0f
+        }
+    }
+
+    fun setTime(time: Float) {
+        timeOfDay = time.coerceIn(0.0f, 24.0f)
     }
     
-    fun advanceTime(hoursToAdvance: Float) {
-        timeOfDay = (timeOfDay + hoursToAdvance) % 24f
-    }
-    
-    fun getSkyColor(): String {
-        return when (timeOfDay) {
-            in 5f..7f -> "SUNRISE_COLOR"
-            in 7f..17f -> "DAY_COLOR"
-            in 17f..19f -> "SUNSET_COLOR"
-            else -> "NIGHT_COLOR"
+    fun getAmbientLight(): Float {
+        return when {
+            timeOfDay in 6.0f..18.0f -> 1.0f 
+            timeOfDay in 18.0f..20.0f -> 1.0f - ((timeOfDay - 18.0f) / 2.0f) * 0.8f 
+            timeOfDay in 4.0f..6.0f -> 0.2f + ((timeOfDay - 4.0f) / 2.0f) * 0.8f 
+            else -> 0.2f 
         }
     }
 }
