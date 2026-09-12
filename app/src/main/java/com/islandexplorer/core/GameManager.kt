@@ -24,6 +24,9 @@ class GameManager {
     val terrainManager = TerrainManager()
     val torchSystem = TorchSystem()
     val tentSystem = TentSystem(dayNightSystem)
+    val backpackSystem = BackpackSystem()
+    val compassSystem = CompassSystem()
+    val mapSystem = MapSystem()
     
     // Tap marker indicator in world space
     var waypointTarget: Vector3? = null
@@ -62,6 +65,7 @@ class GameManager {
         torchSystem.update(deltaTime)
         dayNightSystem.update(deltaTime)
         weatherSystem.update(deltaTime)
+        mapSystem.updateExploration(movement.position)
         camera.update(movement.position, inputManager.cameraDragDelta, deltaTime)
 
         // Update 3D perspective / Top-down view transition camera

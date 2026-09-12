@@ -121,6 +121,11 @@ class GameView(
     private val playerHeadScreen = Vector2(0f, 0f)
     private val waypointScreen = Vector2(0f, 0f)
     private val tilePath = Path()
+    
+    // UI Buttons
+    private val btnTorchRect = RectF()
+    private val btnTentRect = RectF()
+    private val btnBagRect = RectF()
 
     init {
         holder.addCallback(this)
@@ -331,6 +336,25 @@ class GameView(
                 )
                 c.drawRect(0f, 0f, screenW, screenH, fogPaint)
 
+                // 4.5 Darkness & Torch Overlay
+                val darknessAlpha = ((1.0f - ambient) * 220).toInt().coerceIn(0, 255)
+                if (darknessAlpha > 0) {
+                    if (gameManager.torchSystem.isEquipped && gameManager.torchSystem.batteryLevel > 0f) {
+                        val cx = screenW / 2f
+                        val cy = screenH / 2f
+                        val radius = screenW.coerceAtMost(screenH) * 0.65f
+                        val gradient = android.graphics.RadialGradient(
+                            cx, cy, radius,
+                            intArrayOf(Color.TRANSPARENT, Color.argb(darknessAlpha, 0, 0, 0)),
+                            floatArrayOf(0.2f, 1.0f),
+                            android.graphics.Shader.TileMode.CLAMP
+                        )
+                        c.drawRect(0f, 0f, screenW, screenH, Paint().apply { shader = gradient })
+                    } else {
+                        c.drawRect(0f, 0f, screenW, screenH, Paint().apply { color = Color.argb(darknessAlpha, 0, 0, 0) })
+                    }
+                }
+
                 // 5. UI HUD & Camera Mode Switch Button
                 drawUI(c, screenW, screenH)
 
@@ -349,12 +373,47 @@ class GameView(
 
     private fun drawUI(c: Canvas, screenW: Float, screenH: Float) {
         val cam = gameManager.gameCamera
-        val trans = gameManager.viewTransitionManager
-
+        
         // HUD Info
         c.drawText("Elevation: ${String.format("%.1f", gameManager.movement.position.y)}m", 45f, 90f, uiPaint)
         c.drawText("Stamina: ${gameManager.stamina.currentStamina.toInt()}%", 45f, 140f, uiPaint)
-        c.drawText("Pitch: ${cam.pitch.toInt()}° | FOV: ${cam.fov.toInt()}°", 45f, 190f, uiPaint)
+        
+        val hours = gameManager.dayNightSystem.timeOfDay.toInt()
+        val mins = ((gameManager.dayNightSystem.timeOfDay - hours) * 60).toInt()
+        val timeStr = String.format("%02d:%02d", hours, mins)
+        val weatherStr = gameManager.weatherSystem.currentWeather.name
+        val heading = gameManager.compassSystem.getHeading(cam.yaw)
+        
+        c.drawText("Time: $timeStr | Weather: $weatherStr", 45f, 190f, uiPaint)
+        c.drawText("Heading: $heading | Map Explored: ${if(gameManager.mapSystem.isExplored(gameManager.movement.position.x, gameManager.movement.position.z)) "Yes" else "No"}", 45f, 240f, uiPaint)
+
+        // Draw Right Side Action Buttons
+        val btnW = 200f
+        val btnH = 80f
+        val btnX = screenW - btnW - 40f
+        
+        val btnPaint = Paint().apply { color = Color.argb(180, 40, 40, 50); style = Paint.Style.FILL; isAntiAlias = true }
+        val btnTextPaint = Paint().apply { color = Color.WHITE; textSize = 32f; isAntiAlias = true; textAlign = Paint.Align.CENTER }
+        
+        // Torch Button
+        btnTorchRect.set(btnX, 50f, btnX + btnW, 50f + btnH)
+        c.drawRoundRect(btnTorchRect, 20f, 20f, btnPaint)
+        val torchLabel = if (gameManager.torchSystem.isEquipped) "Torch OFF" else "Torch ON"
+        c.drawText(torchLabel, btnTorchRect.centerX(), btnTorchRect.centerY() + 10f, btnTextPaint)
+        c.drawText("${gameManager.torchSystem.batteryLevel.toInt()}%", btnTorchRect.centerX(), btnTorchRect.centerY() + 45f, Paint(btnTextPaint).apply { textSize = 20f; color = Color.LTGRAY })
+        
+        // Tent/Rest Button
+        val tentY = 50f + btnH + 40f
+        btnTentRect.set(btnX, tentY, btnX + btnW, tentY + btnH)
+        c.drawRoundRect(btnTentRect, 20f, 20f, btnPaint)
+        val tentLabel = if (gameManager.tentSystem.isDeployed) "Rest" else "Deploy Tent"
+        c.drawText(tentLabel, btnTentRect.centerX(), btnTentRect.centerY() + 10f, btnTextPaint)
+
+        // Backpack Button
+        val bagY = tentY + btnH + 40f
+        btnBagRect.set(btnX, bagY, btnX + btnW, bagY + btnH)
+        c.drawRoundRect(btnBagRect, 20f, 20f, btnPaint)
+        c.drawText("Backpack", btnBagRect.centerX(), btnBagRect.centerY() + 10f, btnTextPaint)
 
         // Status Toast or Hint
         if (statusTimer > 0f) {
@@ -388,6 +447,33 @@ class GameView(
         val pointerId = event.getPointerId(pointerIndex)
         val x = event.getX(pointerIndex)
         val y = event.getY(pointerIndex)
+
+        // 1. Check UI Buttons First
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (btnTorchRect.contains(x, y)) {
+                gameManager.torchSystem.toggleTorch()
+                return true
+            }
+            if (btnTentRect.contains(x, y)) {
+                if (gameManager.tentSystem.isDeployed) {
+                    gameManager.tentSystem.restUntilNextShift()
+                    gameManager.tentSystem.packTent()
+                    statusMessage = "You rested until the next shift."
+                    statusTimer = 3.0f
+                } else {
+                    gameManager.tentSystem.deployTent()
+                    statusMessage = "Tent deployed."
+                    statusTimer = 3.0f
+                }
+                return true
+            }
+            if (btnBagRect.contains(x, y)) {
+                gameManager.backpackSystem.toggleBackpack()
+                statusMessage = if (gameManager.backpackSystem.isOpen) "Backpack Opened" else "Backpack Closed"
+                statusTimer = 2.0f
+                return true
+            }
+        }
 
         // 2. Check Joystick Region (Bottom Left)
         val inJoyZone = x < width * 0.45f && y > height * 0.55f
