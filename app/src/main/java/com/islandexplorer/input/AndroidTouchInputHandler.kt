@@ -5,6 +5,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import com.islandexplorer.camera.CameraTouchListener
 import com.islandexplorer.camera.CameraViewMode
 import com.islandexplorer.camera.GameCamera
 import com.islandexplorer.camera.TouchToWorldRaycaster
@@ -16,10 +17,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
-interface CameraTouchListener {
-    fun onWorldTargetTapped(worldPoint: Vector3, screenPoint: Vector2)
-    fun onViewModeToggled(newMode: CameraViewMode)
-}
+typealias InputCameraTouchListener = CameraTouchListener
 
 class AndroidTouchInputHandler(
     context: Context,
