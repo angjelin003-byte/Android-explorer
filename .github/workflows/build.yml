@@ -21,7 +21,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -37,22 +36,26 @@ jobs:
         run: |
           if [ -f "build.gradle.kts" ] && [ -d "app" ]; then
             echo "Building from root Android project..."
-            gradle assembleDebug --stacktrace
+            ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
           elif [ -d "AndroidProject" ]; then
             echo "Building from AndroidProject directory..."
             cd AndroidProject
-            gradle assembleDebug --stacktrace
+            ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
+          else
+            echo "No Android project found!"
+            exit 1
           fi
 
       - name: Locate Debug APK
         run: |
           mkdir -p build-output
-          APK_PATH=$(find . -name "app-debug.apk" -o -name "*-debug.apk" | head -n 1)
+          APK_PATH=$(find . -name "*debug*.apk" -o -name "app-debug.apk" | head -n 1)
           if [ -n "$APK_PATH" ]; then
             echo "Found APK at: $APK_PATH"
             cp "$APK_PATH" build-output/app-debug.apk
           else
             echo "Error: APK not found"
+            find . -type f -name "*.apk"
             exit 1
           fi
 

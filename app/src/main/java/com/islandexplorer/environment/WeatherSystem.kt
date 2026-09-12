@@ -18,7 +18,7 @@ class WeatherSystem {
         timeUntilNextChange -= deltaTime
         if (timeUntilNextChange <= 0f) {
             changeWeather()
-            timeUntilNextChange = (300f..900f).random()
+            timeUntilNextChange = (300..900).random().toFloat()
         }
     }
     
