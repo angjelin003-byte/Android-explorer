@@ -2,6 +2,9 @@ package com.islandexplorer.core
 
 import com.islandexplorer.player.*
 import com.islandexplorer.camera.ThirdPersonCamera
+import com.islandexplorer.camera.GameCamera
+import com.islandexplorer.camera.ViewTransitionManager
+import com.islandexplorer.camera.TouchToWorldRaycaster
 import com.islandexplorer.input.TouchInputManager
 import com.islandexplorer.environment.DayNightSystem
 import com.islandexplorer.environment.WeatherSystem
@@ -13,17 +16,26 @@ class GameManager {
     val movement = PlayerMovement()
     val stamina = PlayerStamina()
     val camera = ThirdPersonCamera()
+    val gameCamera = GameCamera()
+    val viewTransitionManager = ViewTransitionManager()
+    val raycaster = TouchToWorldRaycaster()
     val dayNightSystem = DayNightSystem()
     val weatherSystem = WeatherSystem()
     val terrainManager = TerrainManager()
     val torchSystem = TorchSystem()
     val tentSystem = TentSystem(dayNightSystem)
     
+    // Tap marker indicator in world space
+    var waypointTarget: Vector3? = null
+    var waypointTimer: Float = 0f
+
     private var lastFrameTime = System.nanoTime()
 
     fun initGame() {
         println("Initializing Vertical 3D Island Explorer Architecture...")
         movement.position.y = terrainManager.getElevationAt(movement.position.x, movement.position.z)
+        gameCamera.target = movement.position.copy()
+        gameCamera.updateOrbitPosition()
     }
     
     fun update() {
@@ -50,5 +62,15 @@ class GameManager {
         dayNightSystem.update(deltaTime)
         weatherSystem.update(deltaTime)
         camera.update(movement.position, inputManager.cameraDragDelta, deltaTime)
+
+        // Update 3D perspective / Top-down view transition camera
+        viewTransitionManager.update(deltaTime, gameCamera, movement.position)
+
+        if (waypointTimer > 0f) {
+            waypointTimer -= deltaTime
+            if (waypointTimer <= 0f) {
+                waypointTarget = null
+            }
+        }
     }
 }
