@@ -15,9 +15,12 @@ class GameCamera {
     var pitch: Float = 38.0f // degrees, 0 = horizontal, 90 = straight down
     var yaw: Float = 0.0f   // degrees around Y axis
     var distance: Float = 18.0f
-
     var nearClip: Float = 0.5f
     var farClip: Float = 600.0f
+    
+    // Pan properties
+    var distancePanAmount = 2.0f
+    var currentPanIndex = 0.5f
 
     // 4x4 Transformation Matrices
     val viewMatrix = FloatArray(16)
@@ -41,17 +44,24 @@ class GameCamera {
      * Recalculates position based on target, distance, pitch, and yaw.
      */
     fun updateOrbitPosition() {
-        val clampedPitch = pitch.coerceIn(15.0f, 88.0f)
+        val clampedPitch = pitch.coerceIn(-80.0f, 88.0f)
         val pitchRad = Math.toRadians(clampedPitch.toDouble())
         val yawRad = Math.toRadians(yaw.toDouble())
+        
+        val actualDistance = distance + (distancePanAmount * 2.5f) * currentPanIndex
 
-        val offsetX = (distance * cos(pitchRad) * sin(yawRad)).toFloat()
-        val offsetY = (distance * sin(pitchRad)).toFloat()
-        val offsetZ = (distance * cos(pitchRad) * cos(yawRad)).toFloat()
+        val offsetX = (actualDistance * cos(pitchRad) * sin(yawRad)).toFloat()
+        val offsetY = (actualDistance * sin(pitchRad)).toFloat()
+        val offsetZ = (actualDistance * cos(pitchRad) * cos(yawRad)).toFloat()
 
         position.x = target.x + offsetX
-        position.y = target.y + offsetY
+        position.y = target.y + offsetY + 1.5f
         position.z = target.z + offsetZ
+        
+        // Floor constraint similar to CameraController.cs
+        if (position.y < target.y + 1.0f) {
+            position.y = target.y + 1.0f
+        }
     }
 
     /**
@@ -59,12 +69,14 @@ class GameCamera {
      */
     fun updateMatrices(viewportWidth: Float, viewportHeight: Float) {
         val aspect = if (viewportHeight > 0f) viewportWidth / viewportHeight else 1.0f
+        
+        val targetLookAt = Vector3(target.x, target.y + 1.5f, target.z)
 
         // 1. View Matrix: Camera looking at Target
         Matrix.setLookAtM(
             viewMatrix, 0,
             position.x, position.y, position.z,
-            target.x, target.y, target.z,
+            targetLookAt.x, targetLookAt.y, targetLookAt.z,
             up.x, up.y, up.z
         )
 

@@ -5,17 +5,22 @@ import com.islandexplorer.core.Vector3
 
 class PlayerMovement {
     var position = Vector3(0f, 0f, 0f)
+    var yaw = 0f // Player's rotation around Y axis
     var currentSpeed = 0f
     
-    private val walkSpeed = 2.5f
-    private val runSpeed = 6.0f
-    private val acceleration = 5.0f
+    private val walkSpeed = 3.5f
+    private val runSpeed = 8.0f
+    private val acceleration = 8.0f
     private var _isWalking = false
     private var _isRunning = false
     private var state = PlayerState.IDLE
 
-    fun move(input: Vector2, cameraYaw: Float, wantToRun: Boolean, isTired: Boolean, deltaTime: Float) {
-        val targetSpeed = if (input.magnitude() > 0.1f) {
+    fun move(input: Vector2, wantToRun: Boolean, isTired: Boolean, deltaTime: Float) {
+        // vaxis (vertical) drives forward/back. haxis (horizontal) steers.
+        val vaxis = -input.y // joystick up is negative Y
+        val haxis = input.x
+
+        val targetSpeed = if (Math.abs(vaxis) > 0.1f) {
             if (wantToRun && !isTired) runSpeed else walkSpeed
         } else {
             0f
@@ -34,34 +39,26 @@ class PlayerMovement {
             else -> PlayerState.IDLE
         }
         
-        // Apply movement vector relative to camera
-        if (currentSpeed > 0.1f) {
-            // Convert camera yaw to radians.
-            // In GameCamera, yaw is 0 when camera looks down -Z axis.
-            val yawRad = Math.toRadians(cameraYaw.toDouble())
-            
-            // Camera's forward vector in XZ plane
-            val camForwardX = -Math.sin(yawRad).toFloat()
-            val camForwardZ = -Math.cos(yawRad).toFloat()
-            
-            // Camera's right vector in XZ plane
-            val camRightX = Math.cos(yawRad).toFloat()
-            val camRightZ = -Math.sin(yawRad).toFloat()
-            
-            // input.x is Horizontal (right = positive)
-            // input.y is Vertical (forward = negative, because Android screen Y goes down)
-            val horizontal = input.x
-            val vertical = -input.y // flip so positive means forward
-            
-            val moveDirX = camRightX * horizontal + camForwardX * vertical
-            val moveDirZ = camRightZ * horizontal + camForwardZ * vertical
-            
-            // Normalize move direction so diagonal isn't faster (simplified)
-            val moveLen = Math.sqrt((moveDirX * moveDirX + moveDirZ * moveDirZ).toDouble()).toFloat()
-            if (moveLen > 0.001f) {
-                position.x += (moveDirX / moveLen) * currentSpeed * deltaTime
-                position.z += (moveDirZ / moveLen) * currentSpeed * deltaTime
+        // Handle tank rotation (Driving controls)
+        if ((Math.abs(vaxis) > 0.1f || Math.abs(haxis) > 0.1f)) {
+            val rotationSpeed = 150f
+            if (vaxis >= 0) {
+                yaw += haxis * rotationSpeed * deltaTime
+            } else {
+                yaw -= haxis * rotationSpeed * deltaTime
             }
+            yaw = (yaw % 360f + 360f) % 360f
+        }
+
+        // Apply movement vector in the direction of the player's yaw
+        if (currentSpeed > 0.1f) {
+            val yawRad = Math.toRadians(yaw.toDouble())
+            val forwardX = -Math.sin(yawRad).toFloat()
+            val forwardZ = -Math.cos(yawRad).toFloat()
+            
+            val moveMult = if (vaxis < 0) -1f else 1f
+            position.x += forwardX * currentSpeed * moveMult * deltaTime
+            position.z += forwardZ * currentSpeed * moveMult * deltaTime
         }
     }
     

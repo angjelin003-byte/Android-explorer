@@ -50,16 +50,35 @@ class GameManager {
         
         movement.move(
             inputManager.virtualJoystickInput,
-            gameCamera.yaw,
             inputManager.runButtonPressed,
             stamina.isTired(),
             deltaTime
         )
         
+        // Update camera depth pan based on vertical movement
+        val vaxis = Math.abs(inputManager.virtualJoystickInput.y)
+        if (vaxis > 0.05f) {
+            if (gameCamera.currentPanIndex < 1f) {
+                gameCamera.currentPanIndex += 2.0f * deltaTime
+            } else {
+                gameCamera.currentPanIndex = 1f
+            }
+        } else {
+            if (gameCamera.currentPanIndex > 0f) {
+                gameCamera.currentPanIndex -= 1.5f * deltaTime
+            }
+            if (gameCamera.currentPanIndex < 0f) {
+                gameCamera.currentPanIndex = 0f
+            }
+        }
+        
         // SNAP TO TERRAIN: Player always walks ON the terrain elevation mathematically
         val targetY = terrainManager.getElevationAt(movement.position.x, movement.position.z)
         // Lerp Y for smooth stepping up/down hills
         movement.position.y += (targetY - movement.position.y) * 10f * deltaTime
+        
+        gameCamera.target = movement.position.copy()
+        gameCamera.updateOrbitPosition()
         
         stamina.update(deltaTime, movement.isWalking(), movement.isRunning())
         torchSystem.update(deltaTime)

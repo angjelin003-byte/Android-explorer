@@ -305,10 +305,31 @@ class GameView(
                 }
 
                 // 3. Render Player in 3D Space
+                val pyawRad = Math.toRadians(gameManager.movement.yaw.toDouble())
+                val pForwardX = -Math.sin(pyawRad).toFloat()
+                val pForwardZ = -Math.cos(pyawRad).toFloat()
+                val pRightX = Math.cos(pyawRad).toFloat()
+                val pRightZ = -Math.sin(pyawRad).toFloat()
+                
+                val p100 = Vector2(0f, 0f)
+                val p010 = Vector2(0f, 0f)
+                val shoulderL = Vector2(0f, 0f)
+                val shoulderR = Vector2(0f, 0f)
+                val hipL = Vector2(0f, 0f)
+                val hipR = Vector2(0f, 0f)
+                
+                val heightOffset = 1.6f
+                val shoulderWidth = 0.35f
+                val hipWidth = 0.2f
+                
                 val okFeet = camera.worldToScreen(px, py, pz, screenW, screenH, playerScreen)
-                val okHead = camera.worldToScreen(px, py + 2.0f, pz, screenW, screenH, playerHeadScreen)
-
-                if (okFeet && okHead) {
+                val okHead = camera.worldToScreen(px, py + heightOffset + 0.3f, pz, screenW, screenH, playerHeadScreen)
+                val okShoulderL = camera.worldToScreen(px - pRightX * shoulderWidth, py + heightOffset, pz - pRightZ * shoulderWidth, screenW, screenH, shoulderL)
+                val okShoulderR = camera.worldToScreen(px + pRightX * shoulderWidth, py + heightOffset, pz + pRightZ * shoulderWidth, screenW, screenH, shoulderR)
+                val okHipL = camera.worldToScreen(px - pRightX * hipWidth, py + 0.8f, pz - pRightZ * hipWidth, screenW, screenH, hipL)
+                val okHipR = camera.worldToScreen(px + pRightX * hipWidth, py + 0.8f, pz + pRightZ * hipWidth, screenW, screenH, hipR)
+                
+                if (okFeet && okHead && okShoulderL && okShoulderR && okHipL && okHipR) {
                     val pHeight = (playerScreen.y - playerHeadScreen.y).coerceAtLeast(10f)
                     val pWidth = pHeight * 0.45f
                     val cx = playerScreen.x
@@ -318,15 +339,11 @@ class GameView(
                     playerAnimPhase += currentSpeed * 0.1f // scales with speed
                     
                     // Swing multipliers based on speed
-                    val speedNorm = (currentSpeed / 6.0f).coerceIn(0f, 1f)
+                    val speedNorm = (currentSpeed / 8.0f).coerceIn(0f, 1f)
                     val swing = Math.sin(playerAnimPhase.toDouble()).toFloat() * speedNorm
                     val swingCos = Math.cos(playerAnimPhase.toDouble()).toFloat() * speedNorm
 
-                    // Calculate body landmarks
                     val headRadius = pWidth * 0.4f
-                    val headY = playerHeadScreen.y + headRadius
-                    val shoulderY = headY + headRadius * 1.2f
-                    val pelvisY = playerScreen.y - pHeight * 0.35f
                     val limbWidth = pWidth * 0.25f
 
                     // Drop shadow on ground
@@ -340,48 +357,54 @@ class GameView(
 
                     playerLimbPaint.strokeWidth = limbWidth
 
-                    // Back Arm & Leg (Draw first so they are behind body)
-                    // Arm: Shoulder to Hand
-                    val backHandX = cx - pWidth * 0.6f + swing * pWidth * 0.8f
-                    val backHandY = shoulderY + (pelvisY - shoulderY) * 0.8f - Math.abs(swing) * pWidth * 0.3f
-                    c.drawLine(cx, shoulderY, backHandX, backHandY, playerLimbPaint)
-                    c.drawCircle(backHandX, backHandY, limbWidth / 2, playerHeadPaint)
+                    // Draw 3D Stickman Lines (projected points + animation offsets)
+                    // The offsets are technically 2D here based on swing, but we apply them to the projected points
+                    // to give it a neat stylized look!
+                    
+                    // Back Arm (Left or Right depending on rotation, we just use fixed indices for now, simplifying depth)
+                    // Left Arm:
+                    val lHandX = shoulderL.x + swing * pWidth * 0.8f
+                    val lHandY = hipL.y - Math.abs(swing) * pWidth * 0.3f
+                    c.drawLine(shoulderL.x, shoulderL.y, lHandX, lHandY, playerLimbPaint)
+                    c.drawCircle(lHandX, lHandY, limbWidth / 2, playerHeadPaint)
 
-                    // Leg: Pelvis to Knee to Foot
-                    val backKneeX = cx + pWidth * 0.2f - swing * pWidth * 0.5f
-                    val backKneeY = pelvisY + (playerScreen.y - pelvisY) * 0.5f - Math.max(0f, swingCos) * pWidth * 0.3f
-                    val backFootX = cx + pWidth * 0.2f - swing * pWidth * 0.9f
-                    val backFootY = playerScreen.y - Math.max(0f, swingCos) * pWidth * 0.6f
-                    c.drawLine(cx, pelvisY, backKneeX, backKneeY, playerLimbPaint)
-                    c.drawLine(backKneeX, backKneeY, backFootX, backFootY, playerLimbPaint)
-                    c.drawCircle(backFootX, backFootY, limbWidth / 2, playerPaint)
+                    // Right Arm:
+                    val rHandX = shoulderR.x - swing * pWidth * 0.8f
+                    val rHandY = hipR.y - Math.abs(swing) * pWidth * 0.3f
+                    c.drawLine(shoulderR.x, shoulderR.y, rHandX, rHandY, playerLimbPaint)
+                    c.drawCircle(rHandX, rHandY, limbWidth / 2, playerHeadPaint)
 
-                    // Player Body Trunk
-                    val bodyRect = RectF(
-                        cx - pWidth * 0.4f,
-                        shoulderY,
-                        cx + pWidth * 0.4f,
-                        pelvisY
-                    )
-                    c.drawRoundRect(bodyRect, pWidth * 0.3f, pWidth * 0.3f, playerPaint)
+                    // Left Leg:
+                    val lKneeX = hipL.x - swing * pWidth * 0.5f
+                    val lKneeY = hipL.y + (playerScreen.y - hipL.y) * 0.5f - Math.max(0f, swingCos) * pWidth * 0.3f
+                    val lFootX = hipL.x - swing * pWidth * 0.9f
+                    val lFootY = playerScreen.y - Math.max(0f, swingCos) * pWidth * 0.6f
+                    c.drawLine(hipL.x, hipL.y, lKneeX, lKneeY, playerLimbPaint)
+                    c.drawLine(lKneeX, lKneeY, lFootX, lFootY, playerLimbPaint)
+                    c.drawCircle(lFootX, lFootY, limbWidth / 2, playerPaint)
 
-                    // Front Leg: Pelvis to Knee to Foot
-                    val frontKneeX = cx - pWidth * 0.2f + swing * pWidth * 0.5f
-                    val frontKneeY = pelvisY + (playerScreen.y - pelvisY) * 0.5f - Math.max(0f, -swingCos) * pWidth * 0.3f
-                    val frontFootX = cx - pWidth * 0.2f + swing * pWidth * 0.9f
-                    val frontFootY = playerScreen.y - Math.max(0f, -swingCos) * pWidth * 0.6f
-                    c.drawLine(cx, pelvisY, frontKneeX, frontKneeY, playerLimbPaint)
-                    c.drawLine(frontKneeX, frontKneeY, frontFootX, frontFootY, playerLimbPaint)
-                    c.drawCircle(frontFootX, frontFootY, limbWidth / 2, playerPaint)
+                    // Right Leg:
+                    val rKneeX = hipR.x + swing * pWidth * 0.5f
+                    val rKneeY = hipR.y + (playerScreen.y - hipR.y) * 0.5f - Math.max(0f, -swingCos) * pWidth * 0.3f
+                    val rFootX = hipR.x + swing * pWidth * 0.9f
+                    val rFootY = playerScreen.y - Math.max(0f, -swingCos) * pWidth * 0.6f
+                    c.drawLine(hipR.x, hipR.y, rKneeX, rKneeY, playerLimbPaint)
+                    c.drawLine(rKneeX, rKneeY, rFootX, rFootY, playerLimbPaint)
+                    c.drawCircle(rFootX, rFootY, limbWidth / 2, playerPaint)
 
-                    // Front Arm: Shoulder to Hand
-                    val frontHandX = cx + pWidth * 0.6f - swing * pWidth * 0.8f
-                    val frontHandY = shoulderY + (pelvisY - shoulderY) * 0.8f - Math.abs(swing) * pWidth * 0.3f
-                    c.drawLine(cx, shoulderY, frontHandX, frontHandY, playerLimbPaint)
-                    c.drawCircle(frontHandX, frontHandY, limbWidth / 2, playerHeadPaint)
+                    // Player Body Trunk (polygon from shoulders to hips)
+                    val bodyPath = Path()
+                    bodyPath.moveTo(shoulderL.x, shoulderL.y)
+                    bodyPath.lineTo(shoulderR.x, shoulderR.y)
+                    bodyPath.lineTo(hipR.x, hipR.y)
+                    bodyPath.lineTo(hipL.x, hipL.y)
+                    bodyPath.close()
+                    c.drawPath(bodyPath, playerPaint)
 
                     // Player Head
-                    c.drawCircle(cx, headY, headRadius, playerHeadPaint)
+                    val headMidX = (shoulderL.x + shoulderR.x) * 0.5f
+                    val headMidY = (shoulderL.y + shoulderR.y) * 0.5f - headRadius * 1.2f
+                    c.drawCircle(headMidX, headMidY, headRadius, playerHeadPaint)
                 }
 
                 // 4. Distance / Atmospheric Fog Layer
