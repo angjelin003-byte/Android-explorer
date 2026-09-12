@@ -51,7 +51,7 @@ class GameView(
     private var joyPointerId = -1
 
     // Status Message Toast
-    private var statusMessage: String = "Double-tap or use top-right button to toggle 3D view"
+    private var statusMessage: String = "Explore the island in 3D!"
     private var statusTimer: Float = 5.0f
 
     // Camera Touch Handler
@@ -70,12 +70,7 @@ class GameView(
             }
 
             override fun onViewModeToggled(newMode: CameraViewMode) {
-                statusMessage = if (newMode == CameraViewMode.PERSPECTIVE_3D) {
-                    "Mode: 3D Perspective (Angled View)"
-                } else {
-                    "Mode: Top-Down (Tactical Altitude View)"
-                }
-                statusTimer = 2.5f
+                // View mode switching removed
             }
         }
     )
@@ -116,16 +111,6 @@ class GameView(
         isAntiAlias = true
         setShadowLayer(4f, 2f, 2f, Color.BLACK)
     }
-    private val btnBgPaint = Paint().apply {
-        color = Color.argb(200, 30, 40, 55)
-        style = Paint.Style.FILL
-    }
-    private val btnBorderPaint = Paint().apply {
-        color = Color.argb(255, 80, 170, 255)
-        style = Paint.Style.STROKE
-        strokeWidth = 3f
-        isAntiAlias = true
-    }
 
     // Reusable buffers for projection
     private val p00 = Vector2(0f, 0f)
@@ -136,7 +121,6 @@ class GameView(
     private val playerHeadScreen = Vector2(0f, 0f)
     private val waypointScreen = Vector2(0f, 0f)
     private val tilePath = Path()
-    private val btnRect = RectF()
 
     init {
         holder.addCallback(this)
@@ -372,30 +356,6 @@ class GameView(
         c.drawText("Stamina: ${gameManager.stamina.currentStamina.toInt()}%", 45f, 140f, uiPaint)
         c.drawText("Pitch: ${cam.pitch.toInt()}° | FOV: ${cam.fov.toInt()}°", 45f, 190f, uiPaint)
 
-        // Camera Mode Toggle Pill Button (Top Right)
-        val btnW = 340f
-        val btnH = 90f
-        val btnX = screenW - btnW - 40f
-        val btnY = 50f
-        btnRect.set(btnX, btnY, btnX + btnW, btnY + btnH)
-
-        c.drawRoundRect(btnRect, 45f, 45f, btnBgPaint)
-        c.drawRoundRect(btnRect, 45f, 45f, btnBorderPaint)
-
-        val modeLabel = if (trans.targetMode == CameraViewMode.PERSPECTIVE_3D) {
-            "3D PERSPECTIVE"
-        } else {
-            "TOP-DOWN VIEW"
-        }
-        val labelPaint = Paint().apply {
-            color = Color.rgb(100, 210, 255)
-            textSize = 30f
-            isFakeBoldText = true
-            isAntiAlias = true
-        }
-        val textWidth = labelPaint.measureText(modeLabel)
-        c.drawText(modeLabel, btnX + (btnW - textWidth) / 2f, btnY + 55f, labelPaint)
-
         // Status Toast or Hint
         if (statusTimer > 0f) {
             val toastPaint = Paint().apply {
@@ -428,20 +388,6 @@ class GameView(
         val pointerId = event.getPointerId(pointerIndex)
         val x = event.getX(pointerIndex)
         val y = event.getY(pointerIndex)
-
-        // 1. Check if View Mode Button was tapped (Top Right)
-        if (action == MotionEvent.ACTION_DOWN) {
-            if (x > width - 400f && y < 160f) {
-                gameManager.viewTransitionManager.toggleViewMode(0.8f)
-                statusMessage = if (gameManager.viewTransitionManager.targetMode == CameraViewMode.PERSPECTIVE_3D) {
-                    "Transitioning to 3D Perspective..."
-                } else {
-                    "Transitioning to Top-Down View..."
-                }
-                statusTimer = 2.0f
-                return true
-            }
-        }
 
         // 2. Check Joystick Region (Bottom Left)
         val inJoyZone = x < width * 0.45f && y > height * 0.55f

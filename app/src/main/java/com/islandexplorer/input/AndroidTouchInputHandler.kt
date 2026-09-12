@@ -182,16 +182,10 @@ class AndroidTouchInputHandler(
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         val scaleFactor = detector.scaleFactor
 
-        if (viewTransitionManager.currentMode == CameraViewMode.PERSPECTIVE_3D) {
-            // In 3D perspective: Zoom changes camera distance & subtle FOV
-            val newDistance = (camera.distance / scaleFactor).coerceIn(6.0f, 65.0f)
-            camera.distance = newDistance
-            camera.fov = (camera.fov - (scaleFactor - 1.0f) * 15.0f).coerceIn(30.0f, 80.0f)
-        } else {
-            // In Top-down: Adjusts altitude & distance
-            val newDistance = (camera.distance / scaleFactor).coerceIn(15.0f, 90.0f)
-            camera.distance = newDistance
-        }
+        // Zoom changes camera distance & subtle FOV
+        val newDistance = (camera.distance / scaleFactor).coerceIn(6.0f, 65.0f)
+        camera.distance = newDistance
+        camera.fov = (camera.fov - (scaleFactor - 1.0f) * 15.0f).coerceIn(30.0f, 80.0f)
 
         camera.updateOrbitPosition()
         return true
@@ -217,8 +211,6 @@ class AndroidTouchInputHandler(
     }
 
     override fun onDoubleTap(e: MotionEvent): Boolean {
-        viewTransitionManager.toggleViewMode(0.8f)
-        touchListener?.onViewModeToggled(viewTransitionManager.targetMode)
         return true
     }
 
