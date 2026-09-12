@@ -14,17 +14,17 @@ export default function App() {
           <div className="p-4 bg-neutral-900/50 rounded-xl border border-neutral-700/50">
             <h2 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2">Build Configuration</h2>
             <p className="text-sm text-neutral-300">
-              The project is now completely configured for GitHub Actions. A new file has been added at <code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded text-emerald-300">.github/workflows/android-build.yml</code>.
+              The Android Kotlin project is configured for GitHub Actions CI/CD. The workflow is located at <code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded text-emerald-300">.github/workflows/build.yml</code>.
             </p>
           </div>
           
           <div className="p-4 bg-neutral-900/50 rounded-xl border border-neutral-700/50">
             <h2 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2">Automated Build Process</h2>
             <ul className="text-sm text-neutral-300 space-y-2">
-              <li>1. Push or merge code to the <code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded">main</code> branch.</li>
-              <li>2. GitHub Actions will automatically launch an Ubuntu runner.</li>
-              <li>3. It sets up JDK 17 and compiles the Kotlin Android project via Gradle.</li>
-              <li>4. The compiled <strong>APK file</strong> will be attached to the Action run as an artifact.</li>
+              <li>1. Push or merge code to the <code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded">main</code> branch on GitHub.</li>
+              <li>2. GitHub Actions will automatically launch an Ubuntu runner with JDK 17 and Gradle 8.7.</li>
+              <li>3. It compiles the native Kotlin Android project (<code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded">gradle assembleDebug</code>).</li>
+              <li>4. The compiled <code className="text-xs bg-neutral-800 px-1.5 py-0.5 rounded text-emerald-300">app-debug.apk</code> will be attached to the Action run as a downloadable artifact.</li>
             </ul>
           </div>
         </div>
@@ -34,8 +34,8 @@ export default function App() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <div className="text-sm text-emerald-200">
-            <span className="font-semibold text-emerald-100 block mb-1">Ready for Export</span>
-            You can now export this project back to GitHub. The CI/CD pipeline will immediately trigger your first APK build!
+            <span className="font-semibold text-emerald-100 block mb-1">Pure Kotlin Android Project Ready</span>
+            Export changes to GitHub repository. The <code className="text-xs bg-neutral-800 px-1 py-0.5 rounded">build.yml</code> pipeline will immediately compile and generate <code className="text-xs bg-neutral-800 px-1 py-0.5 rounded text-emerald-300">app-debug.apk</code>!
           </div>
         </div>
       </div>
